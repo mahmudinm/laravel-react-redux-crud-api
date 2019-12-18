@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use File;
 use App\Book;
 use App\Author;
 use Illuminate\Http\Request;
@@ -28,10 +29,24 @@ class BookController extends Controller
         $this->validate($request, [
             'name' => 'required',
             'author_id' => 'required',
+            // 'image' => 'required|file|image|mimes:jpeg,png,jpg|max:2048',
             'category' => 'required'
         ]);
 
-        Book::create($request->all());
+        $existFile = '';
+        if ($request->file('image')) {
+            $file = $request->file('image');
+            $namaFile = time()."_".$file->getClientOriginalName();
+            $tujuanUpload = public_path().'/image';
+            $file->move($tujuanUpload, $namaFile);
+            $existFile .= $namaFile;
+        }
+
+        $book = new Book;
+        $book->create($request->except('image') + [
+            'image' => $existFile
+        ]);
+
         return response()->json('Success', 201);
     }
 
@@ -56,7 +71,28 @@ class BookController extends Controller
             'category' => 'required'
         ]);
 
-        $book->update($request->all());
+        if ($request->file('image')) {
+            if ($book->image) {
+                $imageExist = public_path("image/{$book->image}");
+                if (File::exists($imageExist)) {
+                    unlink($imageExist);
+                }
+            }
+
+            $file = $request->file('image');
+            $namaFile = time()."_".$file->getClientOriginalName();
+            $tujuanUpload = public_path().'/image';
+            $file->move($tujuanUpload, $namaFile);
+
+            $book->image = $namaFile;
+        }
+
+        $book->name = $request->name;
+        $book->author_id = $request->author_id;
+        $book->category = $request->category;
+        $book->save();
+
+        // $book->update($request->all());
         return response()->json('Success', 201); 
     }
     
