@@ -99,6 +99,12 @@ class BookController extends Controller
     // untuk request update put ataupun patch pastikan methodnya post dan tambahkan field _method: (put, patch atau delete)
     public function destroy(Book $book)
     {
+        if ($book->image) {
+            $imageExist = public_path("image/{$book->image}");
+            if (File::exists($imageExist)) {
+                unlink($imageExist);
+            }
+        }
         $book->delete();
         return response()->json('Success', 201);        
     }
